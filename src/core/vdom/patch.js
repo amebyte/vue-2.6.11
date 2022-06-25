@@ -497,7 +497,10 @@ export function createPatchFunction (backend) {
       if (isDef(c) && sameVnode(node, c)) return i
     }
   }
-
+  // diff 的过程
+  // 分析当前两个节点的类型
+  // 如果是元素，更新双方属性、特性等，同时比较双方子元素，这个递归过程，叫深度优先
+  // 如果双方是文本，更新文本
   function patchVnode (
     oldVnode,
     vnode,
@@ -541,16 +544,20 @@ export function createPatchFunction (backend) {
 
     let i
     const data = vnode.data
+    // 钩子
     if (isDef(data) && isDef(i = data.hook) && isDef(i = i.prepatch)) {
       i(oldVnode, vnode)
     }
-
+    // 获取双方孩子
     const oldCh = oldVnode.children
     const ch = vnode.children
+    // 比较双方属性
+    // Vue2在更新元素属性的时候，是暴力全量 diff 更新的。Vue3 则做了很多优化。
     if (isDef(data) && isPatchable(vnode)) {
       for (i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode)
       if (isDef(i = data.hook) && isDef(i = i.update)) i(oldVnode, vnode)
     }
+    // 根据双方类型的几种情况分别处理
     if (isUndef(vnode.text)) {
       if (isDef(oldCh) && isDef(ch)) {
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly)
@@ -711,6 +718,7 @@ export function createPatchFunction (backend) {
       isInitialPatch = true
       createElm(vnode, insertedVnodeQueue)
     } else {
+      // 不管初始化还是更新走这里
       const isRealElement = isDef(oldVnode.nodeType)
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
@@ -742,6 +750,7 @@ export function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
+          // 标准化处理
           oldVnode = emptyNodeAt(oldVnode)
         }
 
