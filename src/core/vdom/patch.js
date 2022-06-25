@@ -466,22 +466,29 @@ export function createPatchFunction (backend) {
           createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx)
         } else {
           vnodeToMove = oldCh[idxInOld]
+          // 找到之后，也要进行判断是否相同节点
           if (sameVnode(vnodeToMove, newStartVnode)) {
+            // 递归更新
             patchVnode(vnodeToMove, newStartVnode, insertedVnodeQueue, newCh, newStartIdx)
             oldCh[idxInOld] = undefined
             canMove && nodeOps.insertBefore(parentElm, vnodeToMove.elm, oldStartVnode.elm)
           } else {
             // same key but different element. treat as new element
+            // 创建新的节点进行替换
             createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx)
           }
         }
         newStartVnode = newCh[++newStartIdx]
       }
     }
+    // 循环结束
+    // 后续处理工作
     if (oldStartIdx > oldEndIdx) {
+      // 老的先结束，判断新的虚拟DOM中是否还有剩下的节点，批量创建
       refElm = isUndef(newCh[newEndIdx + 1]) ? null : newCh[newEndIdx + 1].elm
       addVnodes(parentElm, refElm, newCh, newStartIdx, newEndIdx, insertedVnodeQueue)
     } else if (newStartIdx > newEndIdx) {
+      // 新的先结束，判断老的虚拟DOM中是否还剩下，批量删除
       removeVnodes(oldCh, oldStartIdx, oldEndIdx)
     }
   }
