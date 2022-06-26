@@ -459,9 +459,13 @@ export function createPatchFunction (backend) {
         // 第一次创建一个老的节点的索引 Map，方便后续不需要遍历查找，这是一个空间换时间的方法
         if (isUndef(oldKeyToIdx)) oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)
         // 拿新虚拟DOM开头的第一个节点，去老的虚拟DOM中进行查找
+        // 如果我们在模版渲染列表时，为节点设置了属性 key，那么在上面建立的 key 与 index 索引的对应关系时，就生成了一个 key 对应着一个节点下标这样一个对象。
+        // 也就是说，如果在节点上设置了属性 key，那么在老的虚拟DOM中找相同节点时，可以直接通过 key 拿到下标，从而获取节点，否则我们就需要每一次都要进行遍历查找。
+        // 所以非常推荐在渲染列表时为节点设置 key，最好是后端返回的唯一 ID。
         idxInOld = isDef(newStartVnode.key)
           ? oldKeyToIdx[newStartVnode.key]
           : findIdxInOld(newStartVnode, oldCh, oldStartIdx, oldEndIdx)
+
         if (isUndef(idxInOld)) { // New element
           // 没找到就进行创建
           createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx)
@@ -555,6 +559,7 @@ export function createPatchFunction (backend) {
     // if the new node is not cloned it means the render functions have been
     // reset by the hot-reload-api and we need to do a proper re-render.
     // 静态节点处理
+    // 判断新旧两个虚拟节点是否是静态节点，如果是，就不需要进行更新操作，可以直接跳过更新比对的过程
     if (isTrue(vnode.isStatic) &&
       isTrue(oldVnode.isStatic) &&
       vnode.key === oldVnode.key &&
