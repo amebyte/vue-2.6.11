@@ -456,7 +456,7 @@ export function createPatchFunction (backend) {
         newStartVnode = newCh[++newStartIdx]
       } else {
         // 首尾没找到
-        // 第一次创建一个老的节点的索引 Map，方便后续查找，这是一个空间换时间的方法
+        // 第一次创建一个老的节点的索引 Map，方便后续不需要遍历查找，这是一个空间换时间的方法
         if (isUndef(oldKeyToIdx)) oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)
         // 拿新虚拟DOM开头的第一个节点，去老的虚拟DOM中进行查找
         idxInOld = isDef(newStartVnode.key)
@@ -582,25 +582,29 @@ export function createPatchFunction (backend) {
     // 根据双方类型的几种情况分别处理
     if (isUndef(vnode.text)) {// 新节点没有文本
       if (isDef(oldCh) && isDef(ch)) {
-        // 双方都有子元素,就进行重排，diff
+        // 双方都有子元素,就进行重排，传说中的 diff 就发生在这里
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly)
       } else if (isDef(ch)) {
         // 新节点有孩子, 老的没有，新增创建
         if (process.env.NODE_ENV !== 'production') {
           checkDuplicateKeys(ch)
         }
+        // 判断老节点是否有文本内容，如果有则先清空
         if (isDef(oldVnode.text)) nodeOps.setTextContent(elm, '')
+        // 批量添加子节点
         addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
       } else if (isDef(oldCh)) {
-        // 新节点没有孩子，老的有的，则删除
+        // 新节点没有孩子，老的有的，则删除老节点的孩子节点
         removeVnodes(oldCh, 0, oldCh.length - 1)
       } else if (isDef(oldVnode.text)) {
+        // 新节点没有文本节点，老的有文本节点，则清空老的文本节点
         nodeOps.setTextContent(elm, '')
       }
     } else if (oldVnode.text !== vnode.text) {
-      // 新老节点都是文本节点，则进行文本更新
+      // 新老节点都是文本节点，则判断新老文本内容是否相同进行文本更新
       nodeOps.setTextContent(elm, vnode.text)
     }
+    // 钩子处理
     if (isDef(data)) {
       if (isDef(i = data.hook) && isDef(i = i.postpatch)) i(oldVnode, vnode)
     }
@@ -731,6 +735,7 @@ export function createPatchFunction (backend) {
   }
 
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
+    // 删除
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
       return
